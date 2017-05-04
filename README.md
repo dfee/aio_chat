@@ -1,5 +1,8 @@
-Instructions
-------------
+# asphalt_sanic_demo
+This demonstrates a very simple application that uses `sanic` as a webserver,
+and `jinja2` as the template engine ... within the `asphalt` framework.
+
+## Instructions
 1. create a virtual environment:
     `python -m venv env`
 
