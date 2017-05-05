@@ -16,7 +16,7 @@ class ServerComponent(Component):
 
     @context_teardown
     async def start(self, ctx):
-        ContextualRequest.root_ctx = ctx
+        ContextualRequest.parent_ctx = ctx
         server.ctx = ctx
         ctx.add_resource(server, context_attr='server')
         serve = server.create_server(
