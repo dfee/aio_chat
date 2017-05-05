@@ -9,9 +9,9 @@ from .request import ContextualRequest
 logger = logging.getLogger(__name__)
 
 
-app = Sanic(request_class=ContextualRequest)
+server = Sanic(request_class=ContextualRequest)
 
-@app.route("/")
+@server.route("/")
 async def index(request):
     rendered = request.ctx.jinja2.render(
         'index.html',

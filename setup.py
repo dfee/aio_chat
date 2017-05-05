@@ -14,8 +14,4 @@ setup(
         'Jinja2 >= 2.7.3',
         'ipython ~= 6.0',
     ],
-    entry_points='''
-    [console_scripts]
-    ash=asphalt_sanic_demo.scripts.ashell:main
-    ''',
 )

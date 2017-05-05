@@ -15,13 +15,14 @@ and `jinja2` as the template engine ... within the `asphalt` framework.
    `pip install -e .`
 
 4. run asphalt:
-   `asphalt run config.yaml`
+   `asphalt run development.yaml`
 
 ### Shell
-Simply call `ash config.yaml`. Note that the `sanic` application is actively
-running in the background (as well as `aioredis`). This means that if you
-want to have a CLI interface and a web interface at the same time, you've got
-it! Practically, other services might be helpful - like access to redis.
+Simply call `asphalt run development.yaml shell.yaml`. Note that the `sanic`
+application is actively running in the background (as well as `aioredis`). This
+means that if you want to have a CLI interface and a web interface at the same
+time, you've got it! Practically, other services might be helpful - like access
+to redis.
 
 If you'd like to run coroutines on the loop, simply:
     `run_on_loop(my_coroutine(arg1, arg2))`

@@ -1,12 +1,12 @@
 ---
 component:
-  type: asphalt_sanic_demo.app:ApplicationComponent
+  type: asphalt_sanic_demo.components:MasterComponent
   components:
-    redis:
+    redis: # defaults
     server:
       host: 0.0.0.0
       port: 9000
-    templating:
+    templating: # in production, we should probably figure out jinja2 asyncio
       backend: jinja2
       package_name: asphalt_sanic_demo
       package_path: server/templates
@@ -26,7 +26,7 @@ logging:
       formatter: color
   loggers:
     asphalt:
-      level: INFO
+      level: WARN
     asphalt_sanic_demo:
       level: INFO
   root:
