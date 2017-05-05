@@ -1,7 +1,10 @@
 import logging
 
-from asphalt.core import Component
-from asphalt.core.context import context_teardown
+from asphalt.core import (
+    Component,
+    Context,
+    context_teardown,
+)
 from sqlalchemy.orm import Session
 
 from ..models import Base
@@ -24,8 +27,8 @@ class ServerComponent(Component):
 
         # Set up tables
         sql = await ctx.request_resource(Session)
-        Base.metadata.bind = sql.connection().engine # TODO move to config?
-        Base.metadata.create_all()
+        async with Context(ctx) as subctx:
+            Base.metadata.create_all(subctx.sql.bind)
 
         serve = server.create_server(
             host=self.host,
