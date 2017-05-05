@@ -4,6 +4,10 @@ and `jinja2` as the template engine ... within the `asphalt` framework.
 
 ## Instructions
 
+### Create database
+Assuming you have PostgreSQL installed, issue this command:
+    `createdb asphalt_sanic_demo`
+
 ### Serve
 1. create a virtual environment:
     `python -m venv env`
@@ -17,6 +21,9 @@ and `jinja2` as the template engine ... within the `asphalt` framework.
 4. run asphalt:
    `asphalt run development.yaml`
 
+5. in your browser, visit:
+    `http://localhost:9000`
+
 ### Shell
 Simply call `asphalt run development.yaml shell.yaml`. Note that the `sanic`
 application is actively running in the background (as well as `aioredis`). This
@@ -25,7 +32,7 @@ time, you've got it! Practically, other services might be helpful - like access
 to redis.
 
 If you'd like to run coroutines on the loop, simply:
-    `run_on_loop(my_coroutine(arg1, arg2))`
+    `call_async(my_coroutine, arg1, arg2)`
 
 For example, here's setting and getting a Redis value:
 ```
@@ -34,19 +41,17 @@ Type 'copyright', 'credits' or 'license' for more information
 IPython 6.0.0 -- An enhanced Interactive Python. Type '?' for help.
 
 Environment:
+        ctx             asphalt.core.context
         loop            asyncio.unix_events
-        run_on_loop     __main__
+        call_async      asphalt.core.context
         redis           aioredis.commands
         jinja2          asphalt.templating.api
         server          sanic.app
+        sql             sqlalchemy.orm.session
 
-In [1]: fut = run_on_loop(redis.set('asdf', 1234))
+In [1]: call_async(redis.set, 'my_key', 'my_value')
+Out[1]: True
 
-In [2]: fut.result()
-Out[2]: True
-
-In [3]: fut2 = run_on_loop(redis.get('asdf'))
-
-In [4]: fut2.result()
-Out[4]: b'1234'
+In [2]: call_async(redis.get, 'my_key')
+Out[2]: b'my_value'
 ```

@@ -6,12 +6,14 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'sanic ~= 0.5',
         'asphalt ~= 3.0',
         'asphalt-redis ~= 2.0',
         'asphalt-templating ~= 2.0',
+        'asphalt-sqlalchemy ~= 3.0',
         'colorlog ~= 2.10',
         'Jinja2 >= 2.7.3',
         'ipython ~= 6.0',
+        'psycopg2 ~= 2.7',
+        'sanic ~= 0.5',
     ],
 )

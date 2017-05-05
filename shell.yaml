@@ -1,3 +1,4 @@
 ---
 component:
-  type: asphalt_sanic_demo.components:ShellComponent
+  type: asphalt_sanic_demo.component:ShellComponent
+  components.server.port: 9001

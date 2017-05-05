@@ -1,11 +1,13 @@
 ---
 component:
-  type: asphalt_sanic_demo.components:MasterComponent
+  type: asphalt_sanic_demo.component:MasterComponent
   components:
     redis: # defaults
     server:
       host: 0.0.0.0
       port: 9000
+    sqlalchemy:
+      url: 'postgresql:///asphalt_sanic_demo'
     templating: # in production, we should probably figure out jinja2 asyncio
       backend: jinja2
       package_name: asphalt_sanic_demo

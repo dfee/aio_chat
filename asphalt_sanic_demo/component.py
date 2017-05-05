@@ -7,8 +7,9 @@ from asphalt.core import (
 )
 from IPython import get_ipython
 
-from asphalt_sanic_demo.server import ServerComponent
-from asphalt_sanic_demo.shell import Shell
+from .models import Base
+from .server import ServerComponent
+from .shell import Shell
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ class MasterStartMixin:
     async def start(self, ctx):
         self.add_component('templating')
         self.add_component('server', ServerComponent)
+        self.add_component('sqlalchemy')
         await super().start(ctx)
 
 

@@ -1,3 +1,16 @@
 <html>
-    <body>this is now: {{ now }}</body>
+    <body>
+        <h3>Add friend</h3>
+        <form method="post">
+            Friend's name <input type='text' name='name'>
+            <input type='submit' value='Add friend'>
+        </form>
+        <hl/>
+        <h3>My friends</h3>
+        <ul>
+            {% for friend in friends %}
+            <li>{{ friend.id }} {{ friend.name }}</li>
+            {% endfor %}
+        </ul>
+    </body>
 </html>

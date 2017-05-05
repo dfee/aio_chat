@@ -10,18 +10,16 @@ class Shell:
     def __init__(self, ctx):
         self.ctx = ctx
 
-    def run_on_loop(self, co):
-        return asyncio.run_coroutine_threadsafe(co, self.ctx.loop)
-
     @property
     def user_ns(self):
         return {
             'ctx': self.ctx,
             'loop': self.ctx.loop,
-            'run_on_loop': self.run_on_loop,
+            'call_async': self.ctx.call_async,
             'redis': self.ctx.redis,
             'jinja2': self.ctx.jinja2,
             'server': self.ctx.server,
+            'sql': self.ctx.sql,
         }
 
     @property
