@@ -1,4 +1,3 @@
-from difflib import HtmlDiff
 import logging
 
 from asphalt.core import ContainerComponent
