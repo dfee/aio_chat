@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 
 from ..models import Base
 from .server import server
-from .request import ContextualRequest
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +19,6 @@ class ServerComponent(Component):
 
     @context_teardown
     async def start(self, ctx):
-        ContextualRequest.parent_ctx = ctx
         server.ctx = ctx
         ctx.add_resource(server, context_attr='server')
 
