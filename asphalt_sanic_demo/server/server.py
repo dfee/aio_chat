@@ -8,7 +8,7 @@ from sanic.response import (
 )
 
 from ..models import Friend
-from .utils import subcontext
+from .utils import contextualize
 
 logger = logging.getLogger(__name__)
 server = Sanic()
@@ -38,16 +38,16 @@ def add_friend(ctx, name):
     ctx.sql.add(friend)
 
 @server.route('/', methods=['GET'])
-@subcontext
-async def get_index(request, ctx):
+@contextualize
+async def get_index(ctx):
     friends = await get_friends(ctx)
     rendered = await render_template(ctx, friends)
     return html(rendered)
 
 @server.route('/', methods=['POST'])
-@subcontext
-async def post_index(request, ctx):
-    name = request.form['name'][0]
+@contextualize
+async def post_index(ctx):
+    name = ctx.request.form['name'][0]
     await add_friend(ctx, name)
-    url = request.app.url_for('get_index')
+    url = ctx.request.app.url_for('get_index')
     return redirect(url)
