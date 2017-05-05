@@ -10,11 +10,12 @@ setup(
         'asphalt ~= 3.0',
         'asphalt-redis ~= 2.0',
         'asphalt-templating ~= 2.0',
+        'colorlog ~= 2.10',
         'Jinja2 >= 2.7.3',
         'ipython ~= 6.0',
     ],
     entry_points='''
     [console_scripts]
-    ash=asphalt_sanic_demo.shell:main
+    ash=asphalt_sanic_demo.scripts.ashell:main
     ''',
 )

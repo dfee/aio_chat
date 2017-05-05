@@ -16,7 +16,7 @@ from traitlets.config.loader import Config
 from asphalt_sanic_demo.server import ServerComponent
 
 
-class Shell:
+class AShell:
     def __init__(self, ctx):
         self.ctx = ctx
 
@@ -58,7 +58,7 @@ class Shell:
             config=self.config,
         )
 
-class ShellComponent(CLIApplicationComponent):
+class AShellComponent(CLIApplicationComponent):
     def __init__(self, components):
         super().__init__(components)
 
@@ -70,8 +70,8 @@ class ShellComponent(CLIApplicationComponent):
 
     async def run(self, ctx):
         print('here', flush=True)
-        shell = Shell(ctx)
-        await shell.run()
+        ashell = AShell(ctx)
+        await ashell.run()
 
 
 @click.command(help='Run a shell in the context of the application.')
@@ -90,8 +90,5 @@ def main(configfile, unsafe):
             'the document root element must be a dictionary'
         config = merge_config(config, config_data)
 
-    xshell_component = ShellComponent(config['component']['components'])
-    run_application(xshell_component)
-
-if __name__ == '__main__':
-    main()
+    component = AShellComponent(config['component']['components'])
+    run_application(component)

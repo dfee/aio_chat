@@ -4,27 +4,31 @@ component:
   components:
     redis:
     server:
+      host: 0.0.0.0
       port: 9000
     templating:
       backend: jinja2
       package_name: asphalt_sanic_demo
-      package_path: templates
+      package_path: server/templates
 
 logging:
   version: 1
   disable_existing_loggers: false
   formatters:
-    default:
+    color:
+      class: colorlog.ColoredFormatter
+      format: '%(log_color)s%(levelname)-5.5s %(asctime)s%(reset)s %(blue)s[%(name)s:%(lineno)s][%(threadName)s]%(reset)s %(message)s'
+    generic:
       format: '[%(asctime)s %(levelname)s] %(message)s'
   handlers:
     console:
       class: logging.StreamHandler
-      formatter: default
+      formatter: color
   loggers:
-    root:
-      handlers: [console]
-      level: DEBUG
+    asphalt:
+      level: INFO
     asphalt_sanic_demo:
-      handlers: [console]
-      level: DEBUG
-      propagate: false
+      level: INFO
+  root:
+    handlers: [console]
+    level: INFO
