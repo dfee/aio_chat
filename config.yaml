@@ -2,12 +2,13 @@
 component:
   type: asphalt_sanic_demo.app:ApplicationComponent
   components:
+    redis:
     server:
       port: 9000
     templating:
       backend: jinja2
       package_name: asphalt_sanic_demo
-      # package_path: templates  # jinja2.loaders.PackageLoader defaults to this
+      package_path: templates
 
 logging:
   version: 1
@@ -22,7 +23,7 @@ logging:
   loggers:
     root:
       handlers: [console]
-      level: INFO
+      level: DEBUG
     asphalt_sanic_demo:
       handlers: [console]
       level: DEBUG

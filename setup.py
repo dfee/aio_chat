@@ -8,8 +8,12 @@ setup(
     install_requires=[
         'sanic ~= 0.5',
         'asphalt ~= 3.0',
+        'asphalt-redis ~= 2.0',
         'asphalt-templating ~= 2.0',
-        'asphalt ~= 3.0',
         'Jinja2 >= 2.7.3',
-    ]
+    ],
+    entry_points='''
+    [console_scripts]
+    ash=asphalt_sanic_demo.shell:main
+    ''',
 )

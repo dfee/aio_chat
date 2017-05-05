@@ -2,11 +2,7 @@ import asyncio
 from datetime import datetime
 import logging
 
-from asphalt.core import (
-    Component,
-    Event,
-    Signal,
-)
+from asphalt.core import Component
 from asphalt.core.context import context_teardown
 from sanic import Sanic
 from sanic.response import html
