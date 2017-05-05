@@ -26,6 +26,7 @@ class AShell:
     @property
     def user_ns(self):
         return {
+            'ctx': self.ctx,
             'loop': self.ctx.loop,
             'run_on_loop': self.run_on_loop,
             'redis': self.ctx.redis,
