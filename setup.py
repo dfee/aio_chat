@@ -11,6 +11,7 @@ setup(
         'asphalt-redis ~= 2.0',
         'asphalt-templating ~= 2.0',
         'Jinja2 >= 2.7.3',
+        'ipython ~= 6.0',
     ],
     entry_points='''
     [console_scripts]
