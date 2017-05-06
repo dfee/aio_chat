@@ -8,6 +8,7 @@ from asphalt.core import (
 from IPython import get_ipython
 
 from .models import Base
+from .pubsub import PubSubComponent
 from .server import ServerComponent
 from .shell import Shell
 
@@ -19,6 +20,7 @@ class MasterStartMixin:
         self.add_component('templating')
         self.add_component('server', ServerComponent)
         self.add_component('sqlalchemy')
+        self.add_component('pubsub', PubSubComponent)
         await super().start(ctx)
 
 

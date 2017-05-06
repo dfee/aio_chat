@@ -14,10 +14,11 @@ class Shell:
     def user_ns(self):
         return {
             'ctx': self.ctx,
-            'loop': self.ctx.loop,
             'call_async': self.ctx.call_async,
-            'redis': self.ctx.redis,
+            'loop': self.ctx.loop,
             'jinja2': self.ctx.jinja2,
+            'pubsub': self.ctx.pubsub,
+            'redis': self.ctx.redis,
             'server': self.ctx.server,
             'sql': self.ctx.sql,
         }
