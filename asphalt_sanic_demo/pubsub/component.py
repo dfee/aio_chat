@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import json
 
 import aioredis
@@ -6,8 +7,40 @@ from aioredis.pubsub import Receiver
 from aioredis.abc import AbcChannel
 from asphalt.core import (
     Component,
+    Context,
+    Event,
+    Signal,
     context_teardown,
 )
+from async_generator import aclosing
+
+logger = logging.getLogger(__name__)
+
+
+class SubscribeEvent(Event):
+    def __init__(self, source, topic, channel_id):
+        super().__init__(source, topic)
+        self.channel_id = channel_id
+
+
+class UnsubscribeEvent(Event):
+    def __init__(self, source, topic, channel_id):
+        super().__init__(source, topic)
+        self.channel_id = channel_id
+
+
+class MessageReceiveEvent(Event):
+    def __init__(self, source, topic, channel_id, message):
+        super().__init__(source, topic)
+        self.channel_id = channel_id
+        self.message = message
+
+
+class MessageSendEvent(Event):
+    def __init__(self, source, topic, channel_id, message):
+        super().__init__(source, topic)
+        self.channel_id = channel_id
+        self.message = message
 
 
 # TODO: Swap out for normal implementation once this is fixed:
@@ -24,10 +57,14 @@ class IterableReceiver(Receiver):
 
 
 class PubSub:
-    def __init__(self, ctx, subscribe_conn, publish_conn):
+    subscribe = Signal(SubscribeEvent)
+    unsubscribe = Signal(UnsubscribeEvent)
+    message_received = Signal(MessageReceiveEvent)
+    message_send = Signal(MessageSendEvent)
+
+    def __init__(self, ctx, conn):
         self.ctx = ctx
-        self.subscribe_conn = subscribe_conn
-        self.publish_conn = publish_conn
+        self.conn = conn
         self.queue = asyncio.Queue()
         self.mpsc = IterableReceiver(loop=ctx.loop)
 
@@ -37,38 +74,58 @@ class PubSub:
     async def __anext__(self):
         return await self.queue.get()
 
-    def encode(self, string, encoding='utf-8', errors='strict'):
-        if isinstance(string, bytes):
-            return string
-        return string.encode(encoding, errors)
-
-    async def run(self):
+    async def reader(self):
         async for channel, message in self.mpsc:
             assert isinstance(channel, AbcChannel)
             print(channel.name, message)
-            await self.queue.put((channel.name, message))
+            self.message_received.dispatch(
+                channel.name.decode(),
+                message.decode(),
+            )
+            logger.info('Received messsage on {}: {}'.format(
+                channel.name.decode(),
+                message.decode(),
+            ))
 
-    async def publish(self, channel_id, message):
-        # TODO, perhaps publisher_conn should be ephemeral / attached to the
-        # context of the caller? Likely oughta be event driven.
-        e_channel_id = self.encode(channel_id)
-        e_message = self.encode(message)
-        await self.publish_conn.publish(e_channel_id, e_message)
+    async def writer(self):
+        # TODO: figure out why we're getting this error after sending a msg
+        # and then quitting
+        #  ERROR 2017-05-05 18:18:16,146 [asyncio:1259][Dummy-16] Task was destroyed but it is pending!
+        #  task: <Task pending coro=<RedisConnection._read_data() running at /Users/dfee/code/asphalt_sanic_demo/env/lib/python3.6/site-packages/aioredis/connection.py:132> wait_for=<Future pending cb=[<TaskWakeupMethWrapper object at 0x109e8caf8>()]> cb=[Future.set_result()]>
+        async with aclosing(self.message_send.stream_events()) as stream:
+            async for event in stream:
+                async with Context(self.ctx) as subctx:
+                    await subctx.redis.publish(
+                        event.channel_id.encode(),
+                        event.message.encode(),
+                    )
+                    logger.info('Sent messsage on {}: {}'.format(
+                        event.channel_id,
+                        event.message,
+                    ))
 
-    async def subscribe(self, channel_id):
-        e_channel_id = self.encode(channel_id)
-        channel = self.mpsc.channel(e_channel_id)
-        await self.subscribe_conn.subscribe(channel)
+    async def subscriber(self):
+        async with aclosing(self.subscribe.stream_events()) as stream:
+            async for event in stream:
+                channel = self.mpsc.channel(event.channel_id.encode())
+                await self.conn.subscribe(channel)
+                logger.info('Subscribed to channel {}'.format(
+                    event.channel_id,
+                ))
 
-    async def unsubscribe(self, channel_id):
-        e_channel_id = self.encode(channel_id)
-        channel = self.mpsc.channels.get(e_channel_id)
-        if channel:
-            await self.subscribe_conn.unsubscribe(channel)
+    async def unsubscriber(self):
+        async with aclosing(self.unsubscribe.stream_events()) as stream:
+            async for event in stream:
+                channel = self.mpsc.channels.get(event.channel_id.encode())
+                if channel:
+                    await self.conn.unsubscribe(channel)
+                    logger.info('Unsubscribed from channel {}'.format(
+                        event.channel_id,
+                    ))
 
     async def teardown(self):
         for channel_id in self.mpsc.channels:
-            await self.subscribe_conn.unsubscribe(channel_id)
+            await self.conn.unsubscribe(channel_id)
 
 
 class PubSubComponent(Component):
@@ -83,21 +140,31 @@ class PubSubComponent(Component):
     @context_teardown
     async def start(self, ctx):
         # TODO, figure out how to evict a conn from the redis-pool?
-        subscribe_conn = await aioredis.create_redis(
+        conn = await aioredis.create_redis(
             (self.host, self.port),
             db=self.db,
             password=self.password,
             ssl=self.ssl,
         )
-        mpsc = IterableReceiver(loop=ctx.loop)
-        redis = await ctx.request_resource(aioredis.Redis)
-        pubsub = PubSub(ctx, subscribe_conn, redis)
+        pubsub = PubSub(ctx, conn)
         ctx.add_resource(pubsub, context_attr='pubsub')
-        task = ctx.loop.create_task(pubsub.run())
+
+        # TODO: is this conceptionally correct in the asphalt framework?
+        # Fail early if `redis` is not a resource on the context.
+        await ctx.request_resource(aioredis.Redis)
+
+        tasks = {
+            'subscriber': ctx.loop.create_task(pubsub.subscriber()),
+            'unsubscriber': ctx.loop.create_task(pubsub.unsubscriber()),
+            'reader': ctx.loop.create_task(pubsub.reader()),
+            'writer': ctx.loop.create_task(pubsub.writer()),
+        }
 
         yield
 
-        task.cancel()
+        for task in tasks.values():
+            task.cancel()
+
         await pubsub.teardown()
-        subscribe_conn.close()
-        await subscribe_conn.wait_closed()
+        conn.close()
+        await conn.wait_closed()
