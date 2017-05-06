@@ -1,4 +1,5 @@
 import asyncio
+from enum import Enum
 from functools import partial
 import inspect
 import logging
@@ -8,6 +9,24 @@ from aioredis.abc import AbcChannel
 from asphalt.core import Context
 
 logger = logging.getLogger(__name__)
+
+
+class RegistrationType(Enum):
+    channel = 'channel'
+    pattern = 'pattern'
+
+
+class PubSubMessage:
+    def __init__(self, channel, pattern, message):
+        self.channel = channel
+        self.pattern = pattern
+        self.message = message
+
+    @property
+    def json(self):
+        if not hasattr(self, '_json'):
+            self._json = json.loads(message)
+        return self._json
 
 
 # TODO: Swap out for normal implementation once this is fixed:
@@ -28,85 +47,96 @@ class PubSub:
         self.ctx = ctx
         self.conn = conn
         self.mpsc = IterableReceiver(loop=ctx.loop)
-        self.subscription_handlers = {}
-        self.psubscription_handlers = {}
+        self.registry = {}
 
     async def reader(self):
-        async for channel, _message in self.mpsc:
-            assert isinstance(channel, AbcChannel)
-            channel_id = channel.name.decode()
-            message = _message.decode()
-            logger.info('Heard on channel {}: {}'.format(channel_id, message))
+        async for channel_or_pattern, produced in self.mpsc:
+            assert isinstance(channel_or_pattern, AbcChannel)
 
-            handlers = self.subscription_handlers.get(channel_id, [])
+            channel = None
+            pattern = None
+            message = None
+
+            if channel_or_pattern.is_pattern:
+                channel = produced[0].decode()
+                message = produced[1].decode()
+                pattern = channel_or_pattern.name.decode()
+            else:
+                channel = channel_or_pattern.name.decode()
+                message = produced.decode()
+
+            handlers = []
+            if pattern:
+                registration = (RegistrationType.pattern, pattern)
+                handlers += self.registry.get(registration, [])
+            registration = (RegistrationType.channel, channel)
+            handlers += self.registry.get(registration, [])
+
+            logger.info('Heard on channel {}: {}'.format(channel, message))
+
+            psm = PubSubMessage(channel, pattern, message)
             for handler in handlers:
-                asyncio.ensure_future(handler(message))
+                asyncio.ensure_future(handler(psm))
 
-    async def publish(self, channel_id, message):
+    async def publish(self, channel, message):
         # TODO: figure out why we're getting this error after sending a msg
         # and then quitting
         #  ERROR 2017-05-06 01:37:59,745 [asyncio:1259][Dummy-183] Task was destroyed but it is pending!
         #  task: <Task pending coro=<RedisConnection._read_data() running at /Users/dfee/code/asphalt_sanic_demo/env/lib/python3.6/site-packages/aioredis/connection.py:132> wait_for=<Future pending cb=[<TaskWakeupMethWrapper object at 0x10b6b1168>()]> cb=[Future.set_result()]>
         async with Context(self.ctx) as subctx:
-            await subctx.redis.publish(channel_id.encode(), message.encode())
-            logger.info('Sent messsage on {}: {}'.format(channel_id, message))
+            await subctx.redis.publish(channel.encode(), message.encode())
+            logger.info('Sent messsage on {}: {}'.format(channel, message))
 
-    async def subscribe(self, channel_id, handler):
-        assertion_msg = \
+    async def subscribe(self, channel, handler):
+        func = handler.func if isinstance(handler, partial) else handler
+        assert inspect.iscoroutinefunction(func), \
             'Handler must be either a coroutine function or a ' \
             'partial of a coroutine function.'
-        if isinstance(handler, partial):
-            assert inspect.iscoroutinefunction(handler.func), assertion_msg
-        else:
-            assert inspect.iscoroutinefunction(handler), assertion_msg
 
-        if channel_id not in self.subscription_handlers:
-            channel = self.mpsc.channel(channel_id.encode())
-            await self.conn.subscribe(channel)
-            logger.info('Subscribed to channel: {}'.format(channel_id))
-            self.subscription_handlers[channel_id] = set()
-        self.subscription_handlers[channel_id].add(handler)
-        return partial(self.unsubscribe, channel_id, handler)
+        registration = (RegistrationType.channel, channel)
+        if registration not in self.registry:
+            mpsc_channel = self.mpsc.channel(channel)
+            await self.conn.subscribe(mpsc_channel)
+            logger.info('Subscribed to channel: {}'.format(channel))
+            self.registry[registration] = set()
+        self.registry[registration].add(handler)
+        return partial(self.unsubscribe, channel, handler)
 
-    async def psubscribe(self, channel_ptn, handler):
-        assertion_msg = \
+    async def psubscribe(self, pattern, handler):
+        func = handler.func if isinstance(handler, partial) else handler
+        assert inspect.iscoroutinefunction(func), \
             'Handler must be either a coroutine function or a ' \
             'partial of a coroutine function.'
-        if isinstance(handler, partial):
-            assert inspect.iscoroutinefunction(handler.func), assertion_msg
-        else:
-            assert inspect.iscoroutinefunction(handler), assertion_msg
 
-        if channel_ptn not in self.psubscription_handlers:
-            channel = self.mpsc.channel(channel_ptn.encode())
-            await self.conn.subscribe(channel)
-            logger.info('Subscribed to pattern: {}'.format(channel_ptn))
-            self.psubscription_handlers[channel_ptn] = set()
-        self.psubscription_handlers[channel_ptn].add(handler)
-        return partial(self.punsubscribe, channel_ptn, handler)
+        registration = (RegistrationType.pattern, pattern)
+        if registration not in self.registry:
+            mpsc_pattern = self.mpsc.pattern(pattern)
+            await self.conn.psubscribe(mpsc_pattern)
+            logger.info('Subscribed to pattern: {}'.format(pattern))
+            self.registry[registration] = set()
+        self.registry[registration].add(handler)
+        return partial(self.punsubscribe, pattern, handler)
 
-    async def unsubscribe(self, channel_id, handler):
-        if channel_id not in self.subscription_handlers:
+    async def unsubscribe(self, channel, handler):
+        registration = (RegistrationType.channel, channel)
+        if registration not in self.registry:
             return
 
-        self.subscription_handlers[channel_id].discard(handler)
+        self.registry[registration].discard(handler)
 
-        if not self.subscription_handlers[channel_id]:
-            del self.subscription_handlers[channel_id]
-            channel = self.mpsc.channels.get(channel_id.encode())
-            if channel:
-                await self.conn.unsubscribe(channel)
-                logger.info('Unsubscribed from pattern: {}'.format(channel_id))
+        if not self.registry[registration]:
+            del self.registry[registration]
+            await self.conn.unsubscribe(channel)
+            logger.info('Unsubscribed from pattern: {}'.format(channel))
 
-    async def punsubscribe(self, channel_ptn, handler):
-        if channel_ptn not in self.psubscription_handlers:
+    async def punsubscribe(self, pattern, handler):
+        registration = (RegistrationType.pattern, pattern)
+        if registration not in self.registry:
             return
 
-        self.psubscription_handlers[channel_ptn].discard(handler)
+        self.registry[registration].discard(handler)
 
-        if not self.psubscription_handlers[channel_ptn]:
-            del self.psubscription_handlers[channel_ptn]
-            channel = self.mpsc.channels.get(channel_ptn.encode())
-            if channel:
-                await self.conn.unsubscribe(channel)
-                logger.info('Unsubscribed from channel: {}'.format(channel_ptn))
+        if not self.registry[registration]:
+            del self.registry[registration]
+            await self.conn.punsubscribe(pattern)
+            logger.info('Unsubscribed from pattern: {}'.format(pattern))
