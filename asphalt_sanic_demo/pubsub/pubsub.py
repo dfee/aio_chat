@@ -3,6 +3,7 @@ from enum import Enum
 from functools import partial
 import inspect
 import logging
+import pickle
 
 from aioredis.pubsub import Receiver
 from aioredis.abc import AbcChannel
@@ -59,11 +60,11 @@ class PubSub:
 
             if channel_or_pattern.is_pattern:
                 channel = produced[0].decode()
-                message = produced[1].decode()
+                message = pickle.loads(produced[1])
                 pattern = channel_or_pattern.name.decode()
             else:
                 channel = channel_or_pattern.name.decode()
-                message = produced.decode()
+                message = pickle.loads(produced)
 
             handlers = []
             if pattern:
@@ -84,7 +85,7 @@ class PubSub:
         #  ERROR 2017-05-06 01:37:59,745 [asyncio:1259][Dummy-183] Task was destroyed but it is pending!
         #  task: <Task pending coro=<RedisConnection._read_data() running at /Users/dfee/code/asphalt_sanic_demo/env/lib/python3.6/site-packages/aioredis/connection.py:132> wait_for=<Future pending cb=[<TaskWakeupMethWrapper object at 0x10b6b1168>()]> cb=[Future.set_result()]>
         async with Context(self.ctx) as subctx:
-            await subctx.redis.publish(channel.encode(), message.encode())
+            await subctx.redis.publish(channel.encode(), pickle.dumps(message))
             logger.info('Sent messsage on {}: {}'.format(channel, message))
 
     async def subscribe(self, channel, handler):

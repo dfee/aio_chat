@@ -53,7 +53,7 @@ asphalt run development.yaml
 Now, in your browser visit `http://localhost:9000`.
 
 
-### Explore
+### Shell
 Simply call `asphalt run development.yaml shell.yaml`. Note that the `sanic`
 (and all services) are actively running in the background. This means that if
 you want to have a CLI interface and a web interface at the same time, you've
@@ -70,45 +70,30 @@ asphalt run development.yaml shell.yaml
 ```
 And visit `http://localhost:9001` in your browser.
 
-Now, follow this tutorial:
 
+### Complex Example
+You can explore all these techniques by running by following this more complex
+messsaging example. In this example we'll run the server on `localhost:9000`
+and `localhost:9001`. As we send messages through each website, the other
+website will receive the input through the PubSub resource (which in turn relies
+on the redis resource), and upon reloading the page, we'll see all the previous
+messages as they've been persisted using our sqlalchemy resource, rendered
+using our templating resource.
+
+1. in one terminal run (note, this will run on port 9000 by default):
 ```
-~/code/asphalt_sanic_demo on master via env [I] ➔ asphalt run development.yaml shell.yaml
-INFO  2017-05-06 15:09:01,447 [sanic:724][MainThread] Goin' Fast @ http://0.0.0.0:9001
-Python 3.6.0 (default, Mar  6 2017, 17:37:38)
-Type 'copyright', 'credits' or 'license' for more information
-IPython 6.0.0 -- An enhanced Interactive Python. Type '?' for help.
-
-Environment:
-        ctx             asphalt.core.context
-        call_async      asphalt.core.context
-        loop            asyncio.unix_events
-        jinja2          asphalt.templating.api
-        pubsub          asphalt_sanic_demo.pubsub.pubsub
-        redis           aioredis.commands
-        server          sanic.app
-        sql             sqlalchemy.orm.session
-
-In [1]: async def notify(psm):
-   ...:     print('Notify: "{}" on "{}" (from pattern "{}")'.format(
-   ...:         psm.message,
-   ...:         psm.channel,
-   ...:         psm.pattern,
-   ...:     ))
-   ...:
-
-In [2]: unsubscriber = call_async(pubsub.psubscribe, 'friend:*', notify)
-INFO  2017-05-06 15:10:37,975 [asphalt_sanic_demo.pubsub.pubsub:115][MainThread] Subscribed to pattern: friend:*
-
-In [3]: # Now, let's add our friends in the browser!
-
-In [4]: INFO  2017-05-06 15:10:50,893 [asphalt_sanic_demo.pubsub.pubsub:88][MainThread] Sent messsage on friend:1: {"id": 1, "name": "tom"}
-INFO  2017-05-06 15:10:50,894 [asphalt_sanic_demo.pubsub.pubsub:75][MainThread] Heard on channel friend:1: {"id": 1, "name": "tom"}
-Notify: "{"id": 1, "name": "tom"}" on "friend:1" (from pattern "friend:*")
-INFO  2017-05-06 15:10:54,590 [asphalt_sanic_demo.pubsub.pubsub:88][MainThread] Sent messsage on friend:2: {"id": 2, "name": "dick"}
-INFO  2017-05-06 15:10:54,593 [asphalt_sanic_demo.pubsub.pubsub:75][MainThread] Heard on channel friend:2: {"id": 2, "name": "dick"}
-Notify: "{"id": 2, "name": "dick"}" on "friend:2" (from pattern "friend:*")
-INFO  2017-05-06 15:10:57,280 [asphalt_sanic_demo.pubsub.pubsub:88][MainThread] Sent messsage on friend:3: {"id": 3, "name": "harry"}
-INFO  2017-05-06 15:10:57,281 [asphalt_sanic_demo.pubsub.pubsub:75][MainThread] Heard on channel friend:3: {"id": 3, "name": "harry"}
-Notify: "{"id": 3, "name": "harry"}" on "friend:3" (from pattern "friend:*")
+asphalt run development.yaml
 ```
+
+2. in a second terminal run (note, this will run on port 9001 by default):
+```
+asphalt run development.yaml shell.yaml
+```
+
+3. open up two browser windows to `localhost:9000` and `localhost:9001`
+respectively.
+
+4. send a message in either browser window, and watch the message be passed
+to the other window.
+
+5. reload the page to see that the messages have been persistenly stored.

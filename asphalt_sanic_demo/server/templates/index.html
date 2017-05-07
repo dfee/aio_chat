@@ -1,15 +1,36 @@
 <html>
+    <head>
+        <script>
+        var ws = new WebSocket(`ws://${window.location.host}/ws`);
+        ws.onmessage = function(event) {
+            var msg = JSON.parse(event.data);
+            var msgEl = document.createElement("li");
+            var msgContent = document.createTextNode(msg.text);
+            msgEl.appendChild(msgContent);
+
+            var chatboxEl = document.getElementById("chatbox");
+            chatboxEl.appendChild(msgEl);
+        };
+        function sendText() {
+            var textEl = document.getElementById("text");
+            var msg = {
+                text: textEl.value,
+            };
+            ws.send(JSON.stringify(msg));
+            textEl.value = "";
+            return false;
+        }
+        </script>
+    </head>
     <body>
-        <h3>Add friend</h3>
-        <form method="post">
-            Friend's name <input type='text' name='name'>
-            <input type='submit' value='Add friend'>
+        <h3>Send Message</h3>
+        <form onsubmit="return sendText()">
+            Message: <input type="text" name="name" id="text">
+            <input type="submit" value="Send message">
         </form>
-        <hl/>
-        <h3>My friends</h3>
-        <ul>
-            {% for friend in friends %}
-            <li>{{ friend.id }} {{ friend.name }}</li>
+        <ul id="chatbox">
+            {% for message in messages %}
+                <li>{{ message.text }}</li>
             {% endfor %}
         </ul>
     </body>
