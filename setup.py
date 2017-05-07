@@ -6,6 +6,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
+        'aiohttp ~= 2.0',
         'asphalt ~= 3.0',
         'asphalt-redis ~= 2.0',
         'asphalt-templating ~= 2.0',

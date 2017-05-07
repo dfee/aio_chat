@@ -1,19 +1,17 @@
 import logging
-import json
 
 from asphalt.core import (
     Context,
     executor,
 )
-from sanic import Sanic
-from sanic.response import html
+import aiohttp
+from aiohttp import web
 
 from ..models import Message
 from ..pubsub import PubSubMessage
-from .utils import contextualize
 
 logger = logging.getLogger(__name__)
-server = Sanic()
+
 
 @executor
 def render_template(ctx, messages):
@@ -39,48 +37,42 @@ def add_message(ctx, text):
     message = Message(text=text)
     ctx.sql.add(message)
 
-@server.route('/', methods=['GET'])
-@contextualize
-async def get_index(ctx):
-    async with Context(ctx) as subctx:
-        messages = await get_messages(subctx)
-    rendered = await render_template(ctx, messages)
-    return html(rendered)
 
+class WebSocketView(web.View):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ws = None
 
-class WebSocketSession:
-    def __init__(self, ctx, ws):
-        self.ctx = ctx
-        self.ws = ws
-
-    async def send(self, message):
-        logger.info('Sending message: {}'.format(message))
-        await self.ws.send(json.dumps(message))
-
-    async def receive(self):
-        message = await self.ws.recv()
-        parsed = json.loads(message)
-        logger.info('Received message: {}'.format(parsed))
-        return parsed
+    @property
+    def ctx(self):
+        return self.request.ctx
 
     async def forward_psm(self, psm):
         assert isinstance(psm, PubSubMessage)
         message = {'text': psm.message.text}
-        await self.send(message)
+        await self.ws.send_json(message)
+        logger.info('Sent message: {}'.format(message))
 
-    async def __call__(self):
+    async def get(self):
+        self.ws = web.WebSocketResponse()
+        await self.ws.prepare(self.request)
         unsub = await self.ctx.pubsub.psubscribe('message:*', self.forward_psm)
-        try:
-            while True:
-                message = await self.receive()
+        async for msg in self.ws:
+            if msg.type == aiohttp.WSMsgType.TEXT:
                 async with Context(self.ctx) as subctx:
-                    await add_message(subctx, message['text'])
-        finally:
-            await unsub()
+                    await add_message(subctx, msg.json()['text'])
+            elif msg.type == aiohttp.WSMsgType.ERROR:
+                await unsub()
+
+        return self.ws
 
 
-@server.websocket('/ws')
-@contextualize
-async def ws(ctx, ws):
-    session = WebSocketSession(ctx, ws)
-    await session()
+async def index(request):
+    async with Context(request.ctx) as subctx:
+        messages = await get_messages(subctx)
+        text = await render_template(subctx, messages)
+    response = web.Response()
+    response.content_type = 'text/html'
+    response.encoding = 'utf-8'
+    response.text = text
+    return response
