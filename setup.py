@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='asphalt_sanic_demo',
+    name='aio_chat',
     version='0.1',
     packages=find_packages(),
     include_package_data=True,
@@ -16,5 +16,6 @@ setup(
         'inflection ~= 0.3',
         'ipython ~= 6.0',
         'psycopg2 ~= 2.7',
+        'uvloop ~= 0.8',
     ],
 )

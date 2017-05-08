@@ -1,6 +1,6 @@
 ---
 component:
-  type: asphalt_sanic_demo:ApplicationComponent
+  type: aio_chat:ApplicationComponent
   components:
     pubsub: # defaults
     redis: # defaults
@@ -8,10 +8,10 @@ component:
       host: 0.0.0.0
       port: 9000
     sqlalchemy:
-      url: 'postgresql:///asphalt_sanic_demo'
+      url: 'postgresql:///aio_chat'
     templating:
       backend: jinja2
-      package_name: asphalt_sanic_demo
+      package_name: aio_chat
       package_path: server/templates
 
 event_loop_policy: uvloop:EventLoopPolicy
@@ -32,7 +32,7 @@ logging:
   loggers:
     asphalt:
       level: WARN
-    asphalt_sanic_demo:
+    aio_chat:
       level: INFO
   root:
     handlers: [console]

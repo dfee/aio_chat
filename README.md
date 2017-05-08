@@ -1,10 +1,10 @@
-# asphalt_sanic_demo
+# aio_chat
 This demonstrates a very simple application that uses the following components
 running within the `asphalt` framework:
 * jinja2 (`asphalt_templating`)
 * sqlalchemy (`asphalt_sqlalchemy`)
 * redis (`asphalt_redis`)
-* sanic (custom)
+* aiohttp (custom)
 * pubsub (custom)
 
 The purpose of this demo is to show a very basic Create / Retrieve web
@@ -16,7 +16,7 @@ and the additions are published to a Redis pubsub channel.
 ### Create database
 Assuming you have PostgreSQL installed, issue this command:
 ```
-createdb asphalt_sanic_demo
+createdb aio_chat
 ```
 
 
@@ -41,7 +41,7 @@ pip install -e .
 Sane defaults are assumed by the development config, but you can update them
 accordingly.
 ```
-asphalt_sanic_demo/development.yaml
+aio_chat/development.yaml
 ```
 
 
@@ -74,26 +74,27 @@ And visit `http://localhost:9001` in your browser.
 ### Complex Example
 You can explore all these techniques by running by following this more complex
 messsaging example. In this example we'll run the server on `localhost:9000`
-and `localhost:9001`. As we send messages through each website, the other
-website will receive the input through the PubSub resource (which in turn relies
-on the redis resource), and upon reloading the page, we'll see all the previous
-messages as they've been persisted using our sqlalchemy resource, rendered
-using our templating resource.
+and as well as a shell. The website will receive new message entries as we
+create them in the shell.
 
 1. in one terminal run (note, this will run on port 9000 by default):
 ```
 asphalt run development.yaml
 ```
 
-2. in a second terminal run (note, this will run on port 9001 by default):
+2. in a second terminal run (note, this will run a server on port 9001 by
+default):
 ```
 asphalt run development.yaml shell.yaml
 ```
 
-3. open up two browser windows to `localhost:9000` and `localhost:9001`
-respectively.
+3. open up a browser window to `localhost:9000`.
 
-4. send a message in either browser window, and watch the message be passed
-to the other window.
+4. in your tab running an interactive terminal, execute the following:
+```
+msg = _m.Message(text='hello world')
+sql.add(msg)
+sql.commit()
+```
 
-5. reload the page to see that the messages have been persistenly stored.
+5. watch as your browser updates with the new message.
