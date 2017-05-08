@@ -4,13 +4,13 @@ import sqlite3
 from asphalt.core import CLIApplicationComponent
 from IPython import get_ipython
 
-from ..component import MasterStartMixin
+from ..component import ApplicationStartMixin
 from .shell import Shell
 
 logger = logging.getLogger(__name__)
 
 
-class ShellComponent(MasterStartMixin, CLIApplicationComponent):
+class ShellComponent(ApplicationStartMixin, CLIApplicationComponent):
     async def run(self, ctx):
         shell = Shell(ctx)
         await shell.run()

@@ -1,1 +1,1 @@
-from .component import MasterComponent
+from .component import ApplicationComponent
