@@ -1,6 +1,6 @@
 import logging
 
-from aioredis import Redis
+from aioredis import RedisPool
 from asphalt.core import  (
     Component,
     Context,
@@ -24,7 +24,7 @@ class ServerComponent(Component):
     @context_teardown
     async def start(self, ctx):
         # Require relied upon resources
-        #  await ctx.request_resource(Redis)
+        await ctx.request_resource(RedisPool)
         await ctx.request_resource(PubSub)
         await ctx.request_resource(Session)
         await ctx.request_resource(TemplateRenderer)

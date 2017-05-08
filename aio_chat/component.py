@@ -19,7 +19,6 @@ class ApplicationStartMixin:
     async def start(self, ctx):
         self.add_component('pubsub', PubSubComponent)
         self.add_component('redis', RedisPoolComponent)
-        #  self.add_component('redis')
         self.add_component('server', ServerComponent)
         self.add_component('sqlalchemy')
         self.add_component('templating')
