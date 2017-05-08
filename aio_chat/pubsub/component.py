@@ -22,32 +22,20 @@ class PubSubComponent(Component):
 
     @context_teardown
     async def start(self, ctx):
-        # TODO, when `asphalt-redis` moves away from the now deprecated
-        # `aioredis.create_reconnecting_redis` to something more sane like
-        # `aioredis.create_pool`, perhaps we can evict a connection from the
-        # thread pool rather than creating a new connection...
-        await ctx.request_resource(aioredis.Redis)
+        # TODO, upon 1.0 release of `aioredis` and an update to `asphalt-redis`
+        # where `aioredis.create_reconnecting_redis` is moved to something more
+        # sane like `aioredis.create_pool`, migrate away from `aio_chat.redis`
+        # back to regular `asphalt-redis`
 
-        sconn = await aioredis.create_redis(
-            (self.host, self.port),
-            db=self.db,
-            password=self.password,
-            ssl=self.ssl,
-        )
-        pconn = await aioredis.create_redis(
-            (self.host, self.port),
-            db=self.db,
-            password=self.password,
-            ssl=self.ssl,
-        )
-        pubsub = PubSub(ctx, pconn, sconn)
+        pool = await ctx.request_resource(aioredis.RedisPool)
+        conn = await pool.acquire()
+        pubsub = PubSub(ctx, conn, pool)
         ctx.add_resource(pubsub, context_attr='pubsub')
         task = ctx.loop.create_task(pubsub.reader())
 
         yield
 
-        pconn.close()
-        sconn.close()
-        await pconn.wait_closed()
-        await sconn.wait_closed()
         task.cancel()
+        pool.release(conn)
+        pool.close()
+        await pool.wait_closed()

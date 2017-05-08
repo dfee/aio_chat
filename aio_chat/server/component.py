@@ -24,7 +24,7 @@ class ServerComponent(Component):
     @context_teardown
     async def start(self, ctx):
         # Require relied upon resources
-        await ctx.request_resource(Redis)
+        #  await ctx.request_resource(Redis)
         await ctx.request_resource(PubSub)
         await ctx.request_resource(Session)
         await ctx.request_resource(TemplateRenderer)
