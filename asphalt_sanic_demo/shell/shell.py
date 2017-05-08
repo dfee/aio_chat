@@ -5,6 +5,8 @@ from IPython import start_ipython
 from asphalt.core import executor
 from traitlets.config.loader import Config
 
+import asphalt_sanic_demo.models
+
 
 class Shell:
     def __init__(self, ctx):
@@ -13,6 +15,7 @@ class Shell:
     @property
     def user_ns(self):
         return {
+            '_m': asphalt_sanic_demo.models,
             'ctx': self.ctx,
             'call_async': self.ctx.call_async,
             'loop': self.ctx.loop,
