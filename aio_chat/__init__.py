@@ -1,1 +1,4 @@
-from .component import ApplicationComponent
+from .component import (
+    ApplicationComponent,
+    ApplicationShellComponent,
+)

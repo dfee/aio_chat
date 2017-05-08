@@ -48,13 +48,13 @@ aio_chat/development.yaml
 ### Serve
 Execute the following command:
 ```
-asphalt run development.yaml
+road serve development.yaml
 ```
 Now, in your browser visit `http://localhost:9000`.
 
 
 ### Shell
-Simply call `asphalt run development.yaml shell.yaml`. Note that the `sanic`
+Simply call `road shell development.yaml`. Note that the `aiohttp`
 (and all services) are actively running in the background. This means that if
 you want to have a CLI interface and a web interface at the same time, you've
 got it! Practically, other services might be helpful - like access to redis.
@@ -66,7 +66,7 @@ call_async(my_coroutine, arg1, arg2)
 
 For example, to run the server and a shell, run this command:
 ```
-asphalt run development.yaml shell.yaml
+road serve development.yaml
 ```
 And visit `http://localhost:9001` in your browser.
 
@@ -79,13 +79,13 @@ create them in the shell.
 
 1. in one terminal run (note, this will run on port 9000 by default):
 ```
-asphalt run development.yaml
+road serve development.yaml
 ```
 
 2. in a second terminal run (note, this will run a server on port 9001 by
 default):
 ```
-asphalt run development.yaml shell.yaml
+road shell development.yaml
 ```
 
 3. open up a browser window to `localhost:9000`.

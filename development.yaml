@@ -1,9 +1,8 @@
 ---
-component:
-  type: aio_chat:ApplicationComponent
-  components:
-    pubsub: # defaults
-    redis: # defaults
+default:
+  components: &components
+    pubsub:
+    redis:
     server:
       host: 0.0.0.0
       port: 9000
@@ -13,6 +12,19 @@ component:
       backend: jinja2
       package_name: aio_chat
       package_path: server/templates
+
+serve:
+  type: aio_chat:ApplicationComponent
+  components:
+    <<: *components
+
+shell:
+  type: aio_chat:ApplicationShellComponent
+  components:
+    <<: *components
+    server:
+      host: localhost
+      port: 9001
 
 event_loop_policy: uvloop:EventLoopPolicy
 

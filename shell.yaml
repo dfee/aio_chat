@@ -1,6 +1,0 @@
----
-component:
-  type: aio_chat.shell:ShellComponent
-  components:
-    server:
-      port: 9001

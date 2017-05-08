@@ -18,4 +18,8 @@ setup(
         'psycopg2 ~= 2.7',
         'uvloop ~= 0.8',
     ],
+    entry_points='''
+    [console_scripts]
+    road=aio_chat.scripts:road
+    ''',
 )
