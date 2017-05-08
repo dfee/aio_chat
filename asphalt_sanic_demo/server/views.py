@@ -56,14 +56,22 @@ class WebSocketView(web.View):
     async def get(self):
         self.ws = web.WebSocketResponse()
         await self.ws.prepare(self.request)
-        unsub = await self.ctx.pubsub.psubscribe('message:*', self.forward_psm)
-        async for msg in self.ws:
-            if msg.type == aiohttp.WSMsgType.TEXT:
-                async with Context(self.ctx) as subctx:
-                    await add_message(subctx, msg.json()['text'])
-            elif msg.type == aiohttp.WSMsgType.ERROR:
-                await unsub()
+        self.request.app['websockets'].append(self.ws)
 
+        try:
+            unsub = await self.ctx.pubsub.psubscribe(
+                'message:*',
+                self.forward_psm,
+            )
+            async for msg in self.ws:
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    async with Context(self.ctx) as subctx:
+                        await add_message(subctx, msg.json()['text'])
+                elif msg.type == aiohttp.WSMsgType.ERROR:
+                    break
+        finally:
+            await unsub()
+            self.request.app['websockets'].remove(self.ws)
         return self.ws
 
 

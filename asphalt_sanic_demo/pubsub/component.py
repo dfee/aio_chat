@@ -26,6 +26,8 @@ class PubSubComponent(Component):
         # `aioredis.create_reconnecting_redis` to something more sane like
         # `aioredis.create_pool`, perhaps we can evict a connection from the
         # thread pool rather than creating a new connection...
+        await ctx.request_resource(aioredis.Redis)
+
         conn = await aioredis.create_redis(
             (self.host, self.port),
             db=self.db,
@@ -34,12 +36,10 @@ class PubSubComponent(Component):
         )
         pubsub = PubSub(ctx, conn)
         ctx.add_resource(pubsub, context_attr='pubsub')
-        # Fail early if `redis` is not a resource on the context.
-        await ctx.request_resource(aioredis.Redis)
         task = ctx.loop.create_task(pubsub.reader())
 
         yield
 
-        task.cancel()
         conn.close()
         await conn.wait_closed()
+        task.cancel()

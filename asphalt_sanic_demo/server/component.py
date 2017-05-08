@@ -22,6 +22,10 @@ class ServerComponent(Component):
 
     @context_teardown
     async def start(self, ctx):
+        # Require PubSub so we shut down before PubSub does.
+        from ..pubsub import PubSub
+        await ctx.request_resource(PubSub)
+
         # Set up tables
         sql = await ctx.request_resource(Session)
         async with Context(ctx) as subctx:
@@ -32,15 +36,13 @@ class ServerComponent(Component):
         app.ctx = ctx
 
         handler = app.make_handler()
-        f = await ctx.loop.create_server(handler, self.host, self.port)
-        srv = ctx.loop.create_task(f)
+        server = await ctx.loop.create_server(handler, self.host, self.port)
         logger.info('Serving on {}:{}'.format(self.host, self.port))
 
         yield
 
-        srv.cancel()
+        server.close()
+        await server.wait_closed()
         await app.shutdown()
-        await handler.shutdown(2.0)
+        await handler.shutdown(5.0)
         await app.cleanup()
-        f.close()
-        await f.wait_closed()

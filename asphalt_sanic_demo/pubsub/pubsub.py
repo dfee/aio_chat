@@ -80,10 +80,6 @@ class PubSub:
                 asyncio.ensure_future(handler(psm))
 
     async def publish(self, channel, message):
-        # TODO: figure out why we're getting this error after sending a msg
-        # and then quitting
-        #  ERROR 2017-05-06 01:37:59,745 [asyncio:1259][Dummy-183] Task was destroyed but it is pending!
-        #  task: <Task pending coro=<RedisConnection._read_data() running at /Users/dfee/code/asphalt_sanic_demo/env/lib/python3.6/site-packages/aioredis/connection.py:132> wait_for=<Future pending cb=[<TaskWakeupMethWrapper object at 0x10b6b1168>()]> cb=[Future.set_result()]>
         async with Context(self.ctx) as subctx:
             await subctx.redis.publish(channel.encode(), pickle.dumps(message))
             logger.info('Sent messsage on {}: {}'.format(channel, message))

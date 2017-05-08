@@ -16,6 +16,5 @@ setup(
         'inflection ~= 0.3',
         'ipython ~= 6.0',
         'psycopg2 ~= 2.7',
-        'sanic ~= 0.5',
     ],
 )
