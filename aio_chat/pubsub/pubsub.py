@@ -44,9 +44,10 @@ class IterableReceiver(Receiver):
 
 
 class PubSub:
-    def __init__(self, ctx, conn):
+    def __init__(self, ctx, pconn, sconn):
         self.ctx = ctx
-        self.conn = conn
+        self.conn = sconn
+        self.pconn = pconn
         self.mpsc = IterableReceiver(loop=ctx.loop)
         self.registry = {}
 
@@ -80,9 +81,11 @@ class PubSub:
                 asyncio.ensure_future(handler(psm))
 
     async def publish(self, channel, message):
-        async with Context(self.ctx) as subctx:
-            await subctx.redis.publish(channel.encode(), pickle.dumps(message))
-            logger.info('Sent messsage on {}: {}'.format(channel, message))
+        await self.pconn.publish(channel.encode(), pickle.dumps(message))
+        logger.info('Sent messsage on {}: {}'.format(channel, message))
+        #  async with Context(self.ctx) as subctx:
+        #      await subctx.redis.publish(channel.encode(), pickle.dumps(message))
+        #      logger.info('Sent messsage on {}: {}'.format(channel, message))
 
     async def subscribe(self, channel, handler):
         func = handler.func if isinstance(handler, partial) else handler
